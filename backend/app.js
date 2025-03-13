@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import {Server} from "socket.io";
 import mongoose from "mongoose";
 import cors from "cors";
-import { connectToSocket } from "./src/controllers/socketManager";
+import { connectToSocket } from "./src/controllers/socketManager.js";
 
 const app = express();
 const server = createServer(app);
