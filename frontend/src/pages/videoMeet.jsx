@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 
 const server_url= "http://localhost:3000";
@@ -35,12 +35,22 @@ export default function videoMeet() {
     if(isChrome()===false){
         alert("This works best on chrome");
     }
+
+    useEffect(()=>{
+        if(askForUsername===false){
+            getMedia();
+        }
+    }   ,[askForUsername])
+
   return (
     <div>
      { askForUsername === true?
                 <div>
-                    <input type="text" placeholder="Username" value={username} onChange={(e)=>setUsername(e.target.value)}/>
-                    <button onClick={()=>setAskForUsername(false)}>Submit</button>
+                   
+                <h2>Enter into Lobby</h2>
+                {username}
+                <TextField id="outlined-basic" label="Username" variant="outlined" value={username} />                
+                
                 </div>:<></>
         }
     </div>

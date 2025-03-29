@@ -11,7 +11,7 @@ export default function App() {
         <Routes>
             <Route path='/' element={<LandingPage/>}></Route>
             <Route path='/auth' element={<Authentication/>}/>
-            <Route path='/:url' element={videoMeet}></Route>
+            <Route path='/:url' element={<videoMeet/>}></Route>
         </Routes>
      </Router>
     </>
