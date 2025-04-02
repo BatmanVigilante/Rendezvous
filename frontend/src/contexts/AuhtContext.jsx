@@ -1,61 +1,46 @@
 import axios from "axios";
-import httpStatus from "http-status";
 import { createContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export const AuthContext = createContext({});
 
 const client = axios.create({
-  baseURL: "http://localhost:3001/api/v1/users", // Added protocol
+  baseURL: "http://localhost:3001/api/v1/users",
 });
 
 export const AuthProvider = ({ children }) => {
-  const [userData, setUserData] = useState(() => {
-    const token = localStorage.getItem("token");
-    return token ? { token } : null; // Initialize from local storage
-  });
-
-  const router = useNavigate();
+  const [userData, setUserData] = useState(null);
+  const navigate = useNavigate();
 
   const handleRegister = async (name, username, password) => {
     try {
-      const request = await client.post("/register", {
+      const response = await client.post("/register", {
         name,
         username,
         password,
       });
-
-      if (request.status === httpStatus.CREATED) {
-        return request.data.message;
-      }
+      return response.data.message;
     } catch (err) {
-      throw err;
+      return err.response?.data?.message || "Registration failed";
     }
   };
 
   const handleLogin = async (username, password) => {
     try {
-      const request = await client.post("/login", {
-        username,
-        password,
-      });
-
-      if (request.status === httpStatus.OK) {
-        localStorage.setItem("token", request.data.token);
-        setUserData({ token: request.data.token }); // Update state
-        router("/home");
-      }
+      const response = await client.post("/login", { username, password });
+      localStorage.setItem("token", response.data.token);
+      setUserData({ token: response.data.token });
+      navigate("/home");
     } catch (err) {
-      throw err;
+      throw new Error(err.response?.data?.message || "Login failed");
     }
   };
 
-  const data = {
-    userData,
-    setUserData,
-    handleRegister,
-    handleLogin,
-  };
-
-  return <AuthContext.Provider value={data}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{ userData, setUserData, handleRegister, handleLogin }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };

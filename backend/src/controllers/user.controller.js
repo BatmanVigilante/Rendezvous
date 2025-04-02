@@ -1,68 +1,44 @@
-import { User } from "../models/user.model.js";
-import bcrypt,{hash} from 'bcrypt';
-import httpStatus from "http-status";
-import crypto from "crypto";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
 
-const login = async(req,res)=>{
-    const {username,password} = req.body;
-    if(!username || !password){
-        return res.status(httpStatus.BAD_REQUEST).json({
-            "Message":"Please provide username and password"
-        });
-    }
-    try{
-        const user = await User.findOne({
-            username
-        });
-        if(!user){
-            return res.status(httpStatus.NOT_FOUND).json({
-                "Message":"User not found"
-            });
+export const registerUser = async (req, res) => {
+    try {
+        const { name, username, password } = req.body;
+        if (!name || !username || !password) {
+            return res.status(400).json({ message: "All fields are required" });
         }
-        if(bcrypt.compare(password,user.password)){
-            let token = crypto.randomBytes(64).toString('hex');
-            user.token = token;
-            await user.save();
-            return res.status(httpStatus.OK).json({
-                "Message":"User logged in",
-                "token":token
-            });
+
+        const userExists = await User.findOne({ username });
+        if (userExists) {
+            return res.status(400).json({ message: "User already exists" });
         }
-    }
-    catch(e){
-        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-            "Message":"Internal Server Error"
-        });
-    }
-}
 
-const register = async(req,res)=>{
-    const {name,username,password} = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new User({ name, username, password: hashedPassword });
+        await user.save();
 
-    try{
-        const existingUser = await User.findOne({username});
-        if(existingUser){
-            return res.status(httpStatus.FOUND).json({
-                "Message":"User already exists"
-            });
+        res.status(201).json({ message: "User registered successfully" });
+    } catch (err) {
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+export const loginUser = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await User.findOne({ username });
+
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).json({ message: "Invalid credentials" });
         }
-        const hashedPassword = await bcrypt.hash(password,12);
-        const newUser = new User({
-            name,
-            username,
-            password:hashedPassword
-        });
-        await newUser.save();
-        return res.status(httpStatus.CREATED).json({
-            "Message":"User created"
-        });
-    }
-    catch(e){
-        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-            "Message":"Internal Server Error"
-        });
-    }
-  
-}
 
-export {login,register};
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: "1h",
+        });
+
+        res.json({ token });
+    } catch (err) {
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
